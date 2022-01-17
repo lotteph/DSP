@@ -1,60 +1,60 @@
-,properties.Name
-0,CE-P28 PTA Touringcars
-1,CE-P20 Oostpoort
-2,CE-P02 P Olympisch stadion
-3,CE-P16 P+R Zeeburg 1
-4,ZD-P3 VU campus
-5,CE-FP12 Leidseplein
-6,ZO-P04 Villa ArenA
-7,CE-P32 De Hallen
-8,FP Julianaplein
-9,ZD-P1 VUmc (westflank)
-10,CE-P05 Euro Parking
-11,FP Strawinskylaan
-12,CE-P15 Oosterdok
-13,CE-P09 Bijenkorf
-14,CE-P33 Albert Cuyp
-15,ZO-P24 Bijlmerdreef
-16,CE-P27 Kalverstraat
-17,CE-P16 P+R Zeeburg Touringcars
-18,ZO-P22 Bijlmerdreef
-19,CE-FP09 De Munt
-20,CE-P13 Artis
-21,CE-P04 Amsterdam Centraal
-22,ZU-FP01 Mahlerplein
-23,ZD-P02 VUmc (ACTA)
-24,IJDok
-25,CE-P26 The Bank
-26,CE-P02 P+R Olympisch Stadion
-27,ZO-P03 Mikado
-28,Parkeergarage Rokin Amsterdam
-29,CE-P30 Heinekenplein
-30,DP-FP05 Ceintuurbaan
-31,CE-P17 Willemspoort
-32,ZO-P01 P+R Arena
-33,CE-P12 Markenhoven
-34,CE-P07 Museumplein Touringcars
-35,ZO-P01 ArenA
-36,ZO-P02 Arena terrein
-37,ZO-P21 Bijlmerdreef
-38,ZO-P18 HES/ROC
-39,DP-FP06 Ferdinand Bolstraat
-40,CE-P03 Piet Hein
-41,CE-P07 Museumplein
-42,CE-P06 Byzantium
-43,ZO-P05 Villa ArenA
-44,CE-P29 P+R Noord
-45,Fietsparkergarage Zuidplein Amsterdam
-46,CE-P11 Waterlooplein
-47,ZO-P10 Plaza ArenA
-48,CE-P10 Stadhuis Muziektheater
-49,CE-FP07 Reguliers
-50,CE-FP08 Beursplein
-51,CE-P01 Sloterdijk
-52,CE-P16 P+R Zeeburg 2
-53,ZO-P23 Bijlmerdreef
-54,CE-P14 Westerpark
-55,CE-P18 P+R Bos en Lommer
-56,CE-P08 De Kolk
-57,ZO-P06 Pathe/HMH
-58,CE-P31 Prins&Keizer
+,geometry.coordinates,properties.Name
+0,"[4.915205, 52.377864]",CE-P28 PTA Touringcars
+1,"[4.92911, 52.35694]",CE-P20 Oostpoort
+2,"[4.8536, 52.343]",CE-P02 P Olympisch stadion
+3,"[4.96043, 52.37135]",CE-P16 P+R Zeeburg 1
+4,"[4.864, 52.3338]",ZD-P3 VU campus
+5,"[4.5, 52.34]",CE-FP12 Leidseplein
+6,"[4.93866, 52.313]",ZO-P04 Villa ArenA
+7,"[4.868062, 52.367738]",CE-P32 De Hallen
+8,"[4.918427, 52.346638]",FP Julianaplein
+9,"[4.8595, 52.334]",ZD-P1 VUmc (westflank)
+10,"[4.87663, 52.36988]",CE-P05 Euro Parking
+11,"[4.873056, 52.341251]",FP Strawinskylaan
+12,"[4.90901, 52.37601]",CE-P15 Oosterdok
+13,"[4.89508, 52.37382]",CE-P09 Bijenkorf
+14,"[4.886662, 52.355996]",CE-P33 Albert Cuyp
+15,"[4.9548, 52.31477]",ZO-P24 Bijlmerdreef
+16,"[4.890751, 52.367258]",CE-P27 Kalverstraat
+17,"[4.959019, 52.372163]",CE-P16 P+R Zeeburg Touringcars
+18,"[4.95268, 52.31476]",ZO-P22 Bijlmerdreef
+19,"[4.470385, 52.388159]",CE-FP09 De Munt
+20,"[4.91368, 52.3681]",CE-P13 Artis
+21,"[4.89722, 52.37907]",CE-P04 Amsterdam Centraal
+22,"[4.873558, 52.337235]",ZU-FP01 Mahlerplein
+23,"[4.8609, 52.3362]",ZD-P02 VUmc (ACTA)
+24,"[4.89475, 52.38482]",IJDok
+25,"[4.898584, 52.366058]",CE-P26 The Bank
+26,"[4.8536, 52.3444]",CE-P02 P+R Olympisch Stadion
+27,"[4.93985, 52.31086]",ZO-P03 Mikado
+28,"[4.893, 52.37]",Parkeergarage Rokin Amsterdam
+29,"[4.892389, 52.357382]",CE-P30 Heinekenplein
+30,"[4.890476, 52.352791]",DP-FP05 Ceintuurbaan
+31,"[4.88464, 52.3849]",CE-P17 Willemspoort
+32,"[4.94105, 52.31409]",ZO-P01 P+R Arena
+33,"[4.90857, 52.36981]",CE-P12 Markenhoven
+34,"[4.882659, 52.358753]",CE-P07 Museumplein Touringcars
+35,"[4.943, 52.31409]",ZO-P01 ArenA
+36,"[4.93131, 52.31542]",ZO-P02 Arena terrein
+37,"[4.95059, 52.31413]",ZO-P21 Bijlmerdreef
+38,"[4.94731, 52.31522]",ZO-P18 HES/ROC
+39,"[4.890097, 52.353435]",DP-FP06 Ferdinand Bolstraat
+40,"[4.91739, 52.37788]",CE-P03 Piet Hein
+41,"[4.87944, 52.35726]",CE-P07 Museumplein
+42,"[4.88001, 52.3619]",CE-P06 Byzantium
+43,"[4.93866, 52.312]",ZO-P05 Villa ArenA
+44,"[4.93404, 52.403327]",CE-P29 P+R Noord
+45,"[4.873098, 52.340091]",Fietsparkergarage Zuidplein Amsterdam
+46,"[4.90437, 52.36921]",CE-P11 Waterlooplein
+47,"[4.9413, 52.3078]",ZO-P10 Plaza ArenA
+48,"[4.90041, 52.36758]",CE-P10 Stadhuis Muziektheater
+49,"[4.470029, 52.394335]",CE-FP07 Reguliers
+50,"[4.470216, 52.391278]",CE-FP08 Beursplein
+51,"[4.83811, 52.39009]",CE-P01 Sloterdijk
+52,"[4.96447, 52.36988]",CE-P16 P+R Zeeburg 2
+53,"[4.95546, 52.31765]",ZO-P23 Bijlmerdreef
+54,"[4.86627, 52.38462]",CE-P14 Westerpark
+55,"[4.84537, 52.37933]",CE-P18 P+R Bos en Lommer
+56,"[4.89459, 52.37639]",CE-P08 De Kolk
+57,"[4.94441, 52.3125]",ZO-P06 Pathe/HMH
+58,"[4.891446, 52.36242]",CE-P31 Prins&Keizer
