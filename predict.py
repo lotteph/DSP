@@ -211,7 +211,7 @@ def predict(model, data, location, pred_params):
     rmse = np.sqrt(mean_squared_error(y, predictions['Predicted visitors']))
     mae = mean_absolute_error(y, predictions['Predicted visitors'])
 
-    print(location)
-    print("RMSE : % f" %(rmse))
-    print("MAE : % f" %(mae))
+    # print(location)
+    # print("RMSE : % f" %(rmse))
+    # print("MAE : % f" %(mae))
     return predictions.sort_index()

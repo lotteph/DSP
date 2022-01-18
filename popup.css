@@ -1,0 +1,79 @@
+body {
+  color: #393939;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  text-align: center;
+  font-size: 25px;
+  margin-bottom: 10px;
+}
+
+.park_predictions {
+    text-align: left;
+    border-style: solid;
+    border-radius: 15px;
+    border-color: #d9d9d9;
+    border-width: 2px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.people {
+    font-size: 23px;
+}
+
+.text_pred {
+    font-size: 15px;
+    color: #878787;
+}
+
+.text_sugg {
+    font-size: 15px;
+    color: #878787;
+}
+
+.park_recommendations {
+    text-align: left;
+    border-style: solid;
+    border-radius: 15px;
+    border-color: #d9d9d9;
+    border-width: 2px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.park_header {
+    font-size: 20px;
+    color: #393939;
+}
+
+/* .image {
+    margin-left: -5px;
+} */
+
+#predictions {
+    /* width: 380px;
+    height: auto; */
+    /* object-fit: contain; */
+    margin-left: -11px;
+}
+
+.mapslink {
+    text-align: center;
+    font-size: 15px;
+    padding-top: 15px;
+}
+
+#mapslink {
+    border-style: solid;
+    border-radius: 25px;
+    border-color: #878787;
+    border-width: 2px;
+    text-decoration: none;
+    color: #393939;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left:7px;
+    padding-right: 7px;
+}
