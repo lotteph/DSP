@@ -1,3 +1,44 @@
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
+from math import radians, cos, sin, asin, sqrt
+from sklearn.svm import OneClassSVM
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+import category_encoders as ce
+from datetime import timedelta
+from scipy import stats
+import seaborn as sns
+import xgboost as xgb
+import datetime as dt
+import pandas as pd
+import numpy as np
+import warnings
+import glob
+
+vondelpark_west = [{'lat': 52.356496, 'lng': 4.861447}]
+vondelpark_oost_3 = [{'lng': 4.869217, 'lat': 52.358252}]
+vondelpark_oost_2 = [{'lng': 4.874692, 'lat': 52.359798}]
+vondelpark_oost_1 = [{'lng': 4.879652, 'lat': 52.360991}]
+oosterpark = [{'lng': 4.920558, 'lat': 52.360098}]
+sarphatipark = [{'lng': 4.896375, 'lat': 52.354364}]
+westerpark_west = [{'lng': 4.867128, 'lat': 52.387099}]
+westerpark_centrum = [{'lng': 4.873268, 'lat': 52.387374}]
+westerpark_oost = [{'lng': 4.878379, 'lat': 52.386379}]
+westergasfabriek = [{'lng': 4.869769, 'lat': 52.385920}]
+rembrandtpark_noord = [{'lng': 4.846573, 'lat': 52.366664}]
+rembrandtpark_zuid = [{'lng': 4.846932, 'lat': 52.361161}]
+erasmuspark = [{'lng': 4.851909, 'lat': 52.374808}]
+amstelpark = [{'lng': 4.894404, 'lat': 52.330409}]
+park_frankendael = [{'lng': 4.929839, 'lat': 52.350703}]
+beatrixpark = [{'lng': 4.881352, 'lat': 52.342471}]
+flevopark = [{'lng': 4.947881, 'lat': 52.360087}]
+gaasperpark = [{'lng': 4.992192, 'lat': 52.310420}]
+nelson_mandelapark = [{'lng': 4.963691, 'lat': 52.312204}]
+noorderpark = [{'lng': 4.919606, 'lat': 52.392651}]
+sloterpark = [{'lng': 4.811894, 'lat': 52.366219}]
+wh_vliegenbos = [{'lng': 4.931495, 'lat': 52.388802}]
+
 def preprocessGVB(path_url, resono):
     # variabelen/lijsten aanmaken
     # Center points of all the parks (https://www.latlong.net/)
