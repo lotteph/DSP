@@ -12,8 +12,9 @@ import xgboost as xgb
 import os
 import warnings
 import glob
-import plotly
-import plotly.tools as tls
+import catboost
+# import plotly
+# import plotly.tools as tls
 
 warnings.filterwarnings('ignore')
 
@@ -105,16 +106,19 @@ def get_html(data_now, data_next, park_suggs):
                         Top 3 park suggestions:
                     </div>
                     <div class='text_sugg'>
-                        -<a id='mapslink2' href=https://www.google.com/maps/dir/?api=1&origin={get_location_url(data_now.Location)}&destination={get_location_url(park_suggs.iloc[0, 0])}, target="_blank">{park_suggs.iloc[0, 0]}<br>
-                        -<a id='mapslink2' href=https://www.google.com/maps/dir/?api=1&origin={get_location_url(data_now.Location)}&destination={get_location_url(park_suggs.iloc[1, 0])}, target="_blank">{park_suggs.iloc[1, 0]}<br>
-                        -<a id='mapslink2' href=https://www.google.com/maps/dir/?api=1&origin={get_location_url(data_now.Location)}&destination={get_location_url(park_suggs.iloc[2, 0])}, target="_blank">{park_suggs.iloc[2, 0]}<br>
+                        Park name:<br>
+                        <a id='mapslink2' href=https://www.google.com/maps/dir/?api=1&origin={get_location_url(data_now.Location)}&destination={get_location_url(park_suggs.iloc[0, 0])}, target="_blank">{park_suggs.iloc[0, 0]}</a><br>
+                        <a id='mapslink2' href=https://www.google.com/maps/dir/?api=1&origin={get_location_url(data_now.Location)}&destination={get_location_url(park_suggs.iloc[1, 0])}, target="_blank">{park_suggs.iloc[1, 0]}</a><br>
+                        <a id='mapslink2' href=https://www.google.com/maps/dir/?api=1&origin={get_location_url(data_now.Location)}&destination={get_location_url(park_suggs.iloc[2, 0])}, target="_blank">{park_suggs.iloc[2, 0]}</a><br>
                     </div>
                     <div class='business_sugg'>
-                        {baseline[baseline['Location'] == park_suggs.iloc[0, 0]]['Business'].values[0]}<br>
-                        {baseline[baseline['Location'] == park_suggs.iloc[1, 0]]['Business'].values[0]}<br>
-                        {baseline[baseline['Location'] == park_suggs.iloc[2, 0]]['Business'].values[0]}<br>
+                        Predicted crowdedness at {park_suggs.iloc[0, 3][:5]}:<br>
+                        {park_suggs.iloc[0, -1]}<br>
+                        {park_suggs.iloc[1, -1]}<br>
+                        {park_suggs.iloc[2, -1]}<br>
                     </div>
                     <div class='distance'>
+                        Distance:<br>
                         {park_suggs.iloc[0, 1]} km<br>
                         {park_suggs.iloc[1, 1]} km<br>
                         {park_suggs.iloc[2, 1]} km<br>
@@ -150,15 +154,16 @@ def create_plot(prev, data, file_name):
     # plt.legend(loc='upper left', prop={'size': 25})
 
     plt.savefig('images/'+file_name, transparent=True)
-    plotly_fig = tls.mpl_to_plotly(f)
-    plotly.offline.plot(plotly_fig, filename='test.html', auto_open=False, config={'displayModeBar': False})
+    # plotly_fig = tls.mpl_to_plotly(f)
+    # plotly.offline.plot(plotly_fig, filename='test.html', auto_open=False, config={'displayModeBar': False})
 
     plt.cla()
     plt.clf()
 
 def get_predictions(model, data, park_name):
     predictor_cols = data.columns.to_list()[8:]
-    preds = h.predict(model, data, park_name, predictor_cols)
+    # preds = h.predict_XGBoost(model, data, park_name, predictor_cols)
+    preds = h.predict_catboost(model, data, park_name)
     return preds
 
 def get_geodict(path):
@@ -179,9 +184,11 @@ def get_time():
 
 def get_data(data):
     time = get_time()
-    idx = dt.datetime(2022, 1, 5, time.hour, time.minute, 0)
-    idx_prev = dt.datetime(2022, 1, 5, time.hour - 2, time.minute, 0)
-    idx_next = dt.datetime(2022, 1, 5, time.hour + 1, time.minute, 0)
+    date = data.index[0].split(' ')[0].split('-')
+    prediction_date = dt.datetime(int(date[0]), int(date[1]), int(date[2]))
+    idx =  dt.datetime(prediction_date.year, prediction_date.month, prediction_date.day, time.hour, time.minute, 0)
+    idx_prev = dt.datetime(prediction_date.year, prediction_date.month, prediction_date.day, time.hour - 2, time.minute, 0)
+    idx_next = dt.datetime(prediction_date.year, prediction_date.month, prediction_date.day, time.hour + 1, time.minute, 0)
 
     if time.hour == 23:
         prev = data.loc[str(idx_prev):str(idx)]
@@ -196,9 +203,10 @@ def get_data(data):
     return prev, next
 
 def create_park_suggestions(data, model, current_location):
-    prediction_date = dt.datetime(2022, 1, 5)
+    date = data.index[0].split(' ')[0].split('-')
+    prediction_date = dt.datetime(int(date[0]), int(date[1]), int(date[2]))
     time = dt.datetime.now()
-    prediction_time = dt.datetime(2022, 1, 5, time.hour, time.minute, 0)
+    prediction_time = dt.datetime(prediction_date.year, prediction_date.month, prediction_date.day, time.hour, time.minute, 0)
     time = h.ceil_dt(prediction_time + dt.timedelta(minutes=15), dt.timedelta(minutes=15))
 
     current_lat = park_locations[current_location][0]['lat']
@@ -213,30 +221,44 @@ def create_park_suggestions(data, model, current_location):
     values = list(preds.values())
     park_suggestion = h.getParkSuggestion(resono, prediction_date, current_lat, current_lng, values, time)
 
+    business = []
+
+    for loc in park_suggestion.Location:
+        if park_suggestion[park_suggestion['Location'] == loc]['Predictions'].values[0] < 0.85 * park_suggestion[park_suggestion['Location'] == loc]['Visits'].values[0]:
+            business.append('Not busy')
+        elif park_suggestion[park_suggestion['Location'] == loc]['Predictions'].values[0] > 1.15 * park_suggestion[park_suggestion['Location'] == loc]['Visits'].values[0]:
+            business.append('Busier than usual')
+        else:
+            business.append('As busy as usual')
+
+    park_suggestion['Business'] = business
+    # print(park_suggestion)
+
     return park_suggestion
 
 def get_baseline(data, resono):
-    prediction_date = dt.datetime(2022, 1, 5)
+    date = data.index[0].split(' ')[0].split('-')
+    prediction_date = dt.datetime(int(date[0]), int(date[1]), int(date[2]))
     time = dt.datetime.now()
     time = time - dt.timedelta(minutes=time.minute % 15, seconds=time.second)
-    idx = dt.datetime(2022, 1, 5, time.hour, time.minute, 0)
+    idx = dt.datetime(prediction_date.year, prediction_date.month, prediction_date.day, time.hour, time.minute, 0)
     current_data = data.loc[str(idx)][['Location', 'Visits']]
 
     baseline = h.get_baseline(resono, prediction_date, time)
     business = []
 
     for loc in locations:
-        if current_data[current_data['Location'] == loc]['Visits'].values[0] < 0.9 * baseline[baseline['Location'] == loc]['Visits'].values[0]:
+        if current_data[current_data['Location'] == loc]['Visits'].values[0] < 0.85 * baseline[baseline['Location'] == loc]['Visits'].values[0]:
             business.append('Not busy')
-        elif current_data[current_data['Location'] == loc]['Visits'].values[0] > 1.1 * baseline[baseline['Location'] == loc]['Visits'].values[0]:
+        elif current_data[current_data['Location'] == loc]['Visits'].values[0] > 1.15 * baseline[baseline['Location'] == loc]['Visits'].values[0]:
             business.append('Busier than usual')
         else:
-            business.append('A little busy')
+            business.append('As busy as usual')
 
     baseline['Business'] = business
     return baseline
 
-data = pd.read_csv('CSVs/Resono_jan5.csv', index_col=0)
+data = pd.read_csv('Models Catboost/dec_19_2021.csv', index_col=1)
 locations = data.Location.unique()
 
 resono = pd.read_csv('CSVs/resono_2020_2022.csv', index_col=0)
@@ -244,10 +266,11 @@ resono = pd.read_csv('CSVs/resono_2020_2022.csv', index_col=0)
 d = get_geodict('GeoJSON files/*.geojson')
 geos = list(d.keys())
 
-print('Loading model...')
-model = xgb.Booster()
-model.load_model("shittymodel.json")
-print('Done!')
+# print('Loading model...')
+# model = xgb.Booster()
+# model.load_model("shittymodel.json")
+cls = catboost.CatBoostRegressor()
+# print('Done!')
 
 baseline = get_baseline(data, resono)
 
@@ -286,9 +309,13 @@ print('Making predictions for the parks...')
 for park in geos:
     g = d[park]
     name = g['features'][0]['properties']['Naam']
+    print(name)
     if name in locations:
         data_loc = data[data['Location'] == name]
         prev, next = get_data(data_loc)
+
+        model = cls.load_model('Models Catboost/model_' + name.lower().replace(" ", "_") + '.json', "json")  # load model
+        # cat_model.save_model('model_' + x.lower().replace(" ", "_") + '.json', format="json")
         preds = get_predictions(model, next, name)
         park_suggs = create_park_suggestions(data, model, name)
         create_plot(prev, preds, name)

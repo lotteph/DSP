@@ -6,6 +6,7 @@ import seaborn as sns
 import os
 import datetime as dt
 import xgboost as xgb
+import catboost
 # import category_encoders as ce
 from sklearn.svm import OneClassSVM
 from sklearn import preprocessing
@@ -56,158 +57,7 @@ def clean_resono(df, merge=True):
     df = df.set_index('Datetime')
     return df
 
-def add_time_vars(data, onehot=True):
-    '''
-    Adds columns for the month and weekday, and also the one-hot encoding or the cyclical versions of those features.
-
-    :data: Dataframe that contains the a column with the datetime
-    :onehot: Use onehot encoding if true and cyclical features if false (default = True)
-
-    Returns a Dataframe with either the one-hot encoding or the sine and cosine of the month, weekday and time added
-    '''
-    data = data.reset_index()
-    if onehot == True:
-        years = pd.Categorical(data['Datetime'].dt.year)
-        data['Month'] = pd.Categorical(data['Datetime'].dt.month)
-        data['Weekday'] = pd.Categorical(data['Datetime'].dt.weekday)
-        data['Hour'] =  pd.Categorical(data['Datetime'].dt.hour)
-        data['Minute'] =  pd.Categorical(data['Datetime'].dt.minute)
-
-        year_dummies = pd.get_dummies(years, prefix='Year_')
-        month_dummies = pd.get_dummies(data[['Month']], prefix='Month_')
-        weekday_dummies = pd.get_dummies(data[['Weekday']], prefix='Weekday_')
-        hour_dummies = pd.get_dummies(data[['Hour']], prefix='Hour_')
-        minute_dummies = pd.get_dummies(data[['Minute']], prefix='Minute_')
-
-        data = data.merge(year_dummies, left_index = True, right_index = True)
-        data = data.merge(month_dummies, left_index = True, right_index = True)
-        data = data.merge(weekday_dummies, left_index = True, right_index = True)
-        data = data.merge(hour_dummies, left_index = True, right_index = True)
-        data = data.merge(minute_dummies, left_index = True, right_index = True)
-
-    else:
-        dates = data['Date'].values
-        weekdays = []
-        months = []
-        hours = []
-        minutes = []
-
-        for d in dates:
-            year, month, day = (int(x) for x in d.split('-'))
-            ans = dt.date(year, month, day)
-            weekdays.append(ans.isocalendar()[2])
-            months.append(month)
-
-        for t in data['Time']:
-            hour, minute, second = (int(x) for x in t.split(':'))
-            hours.append(hour)
-            minutes.append(minute)
-
-        data['Weekday'] = weekdays
-        data['Month'] = months
-        data['Hour'] = hours
-        data['Minute'] = minutes
-        data['Weekday_sin'] = np.sin(data['Weekday'] * (2 * np.pi / 7))
-        data['Weekday_cos'] = np.cos(data['Weekday'] * (2 * np.pi / 7))
-        data['Month_sin'] = np.sin(data['Month'] * (2 * np.pi / 12))
-        data['Month_cos'] = np.cos(data['Month'] * (2 * np.pi / 12))
-        data['Hour_sin'] = np.sin(data['Hour'] * (2 * np.pi / 24))
-        data['Hour_cos'] = np.cos(data['Hour'] * (2 * np.pi / 24))
-        data['Minute_sin'] = np.sin(data['Minute'] * (2 * np.pi / 60))
-        data['Minute_cos'] = np.cos(data['Minute'] * (2 * np.pi / 60))
-
-    data = data.set_index('Datetime')
-    return data
-
-def remove_outliers(df, gamma=0.01, nu=0.03):
-    '''
-    Remove outliers with a One-Class SVM.
-
-    :df: Dataframe to perform outlier detection on
-    :gamma: Value of the kernel coefficient for ‘rbf’ (default = 0.01)
-    :nu: Percentage of the data to be classified as outliers (default = 0.03)
-
-    Returns
-    :df_detected: Dataframe with the outliers replaced by NaN
-    :outlier_index: List of the indexes of the outliers (used for plotting the outliers, probably
-                                                         not necessary for final product)
-    '''
-    model = OneClassSVM(kernel='rbf', gamma=gamma, nu=nu)
-    df = df.reset_index()
-
-    for loc in list(set(df.Location)):
-        dt = df[(df.Location == loc)]
-        dt_detected = dt.copy()
-
-        scaler = preprocessing.StandardScaler()
-        dt_scaled = scaler.fit_transform(dt['Visits'].values.reshape(-1,1))
-
-        fit = model.fit(dt_scaled)
-        pred = fit.predict(dt_scaled)
-        outlier_index = np.where(pred == -1)
-        idx = dt.iloc[outlier_index].index
-        df.loc[idx, 'Visits'] = np.nan
-
-    df = df.set_index('Datetime')
-    return df
-
-def interpolate_df(df, backfill=False):
-    '''
-    Interpolate the NaN values in the dataframe with either backfilling or linear interpolation.
-
-    :df: Dataframe to be interpolated
-    :backfill: Bool, if true, interpolate with backfilling, otherwise use linear interpolation (default = False)
-
-    Returns a Dataframe with interpolated values
-    '''
-    df_int = df.copy()
-    dt = df['Visits']
-    dt_int = dt.copy()
-
-    if backfill == True:
-        dt_int = dt_int.backfill()
-
-    else:
-        dt_int = dt_int.interpolate()
-
-    df_int['Visits'] = dt_int
-    return df_int
-
-def smooth_df(df, N=3):
-    '''
-    Smooth the data with a rolling average to remove false peaks in the data
-
-    :df: Dataframe to be smoothed
-    :N: Size of the moving window (default = 3)
-
-    Returns a smoothed Dataframe
-    '''
-    df_smooth = df.copy()
-    dt = df['Visits']
-    df_smooth['Visits'] = dt.rolling(N).mean()
-
-    begin_vals = df.iloc[:N-1]
-    df_smooth.update(begin_vals)
-
-    return df_smooth
-
-def get_data(csv):
-    '''
-    Read csv file and perform data preprocessing on the Dataframe
-
-    :csv: Path to the csv file
-
-    Returns a preprocessed Dataframe
-    '''
-    resono_df = pd.read_csv(csv, index_col=0)
-    data_clean = clean_resono(resono_df)
-    no_outlier = remove_outliers(data_clean)
-    no_outlier_int = interpolate_df(no_outlier)
-    data_smooth = smooth_df(no_outlier_int)
-    data_aug = add_time_vars(data_smooth, onehot=True)
-    return data_aug
-
-def predict(model, data, location, pred_params):
+def predict_XGBoost(model, data, location, pred_params):
     '''
     Predict the amount of visits using XGBoost
 
@@ -242,6 +92,34 @@ def predict(model, data, location, pred_params):
     # print("RMSE : % f" %(rmse))
     # print("MAE : % f" %(mae))
     return predictions.sort_index()
+
+def predict_catboost(model, data, location):
+    data = data[data['Location']== location]
+
+    X = data[['Location', 'Date', 'Time',
+        'Journeys', 'Windspeed', 'Temperature', 'Clouds', 'Rain amount',
+        'Rain duration', 'Sun duration', 'Fog', 'Rain', 'Snow', 'Thunder',
+        'Ice', 'Holiday_Count', 'Year', 'Month', 'Day_x',
+        'retail_and_recreation_percent_change_from_baseline',
+        'grocery_and_pharmacy_percent_change_from_baseline',
+        'parks_percent_change_from_baseline',
+        'transit_stations_percent_change_from_baseline',
+        'workplaces_percent_change_from_baseline',
+        'residential_percent_change_from_baseline', 'stringency_index',
+        'Holiday_Name_Ascension Thursday',
+        'Holiday_Name_Easter', 'Holiday_Name_Fall holiday',
+        'Holiday_Name_Good Friday', 'Holiday_Name_Kings day',
+        'Holiday_Name_Liberation Day', 'Holiday_Name_May holiday',
+        'Holiday_Name_Spring holiday', 'Holiday_Name_Summer holiday',
+        'Holiday_Name_Whit', 'Holiday_Name_Winter holiday']]
+    y = data['Visits']
+
+    pred = model.predict(X)
+
+    predictions = pd.DataFrame({'Predicted visitors': pred,
+                                'Actual visitors': y}).sort_index()
+    # print(predictions)
+    return predictions
 
 def haversine(lon1, lat1, lon2, lat2):
     """
@@ -284,8 +162,20 @@ def getParkSuggestion(df, date, lat, lng, pred, time):
     df_baseline['Distance'] = [haversine(lat, lng, df_baseline.iloc[x]['Latitude'], df_baseline.iloc[x]['Longitude'])
                          for x in range(df_baseline.shape[0])]
 
+    # df_baseline['Predictions'] = pred
+    # df_baseline['Crowdedness factor'] = (df_baseline['Predictions'] - df_baseline['Visits']) / df_baseline['Visits'] #(baseline - values) / values
+    # df_baseline['Park suggestion'] = df_baseline['Distance'] + (df_baseline['Crowdedness factor']*5)
+    # df_baseline['Distance'] = round(df_baseline['Distance'],2)
+    #
+    # df_baseline = df_baseline.reset_index(drop=True)
+    # df_baseline.index += 1
+    # df_baseline = df_baseline[df_baseline['Distance'] > 0]
+    # return df_baseline
+
     df_baseline['Predictions'] = pred
     df_baseline['Crowdedness factor'] = (df_baseline['Predictions'] - df_baseline['Visits']) / df_baseline['Visits'] #(baseline - values) / values
+    crowdedness = df_baseline['Crowdedness factor'].values
+    df_baseline['Crowdedness factor'] = [x/5 if x <= 0 else x for x in crowdedness]
     df_baseline['Park suggestion'] = df_baseline['Distance'] + (df_baseline['Crowdedness factor']*5)
     df_baseline['Distance'] = round(df_baseline['Distance'],2)
 
@@ -293,12 +183,15 @@ def getParkSuggestion(df, date, lat, lng, pred, time):
     df_baseline.index += 1
     df_baseline = df_baseline[df_baseline['Distance'] > 0]
 
-    if(df_baseline['Distance'] <= 3).sum() >= 3:
-        df_baseline = df_baseline[df_baseline['Distance'] <= 3]
-        return df_baseline.sort_values(by='Park suggestion')[['Location', 'Distance', 'Park suggestion']].iloc[:3]
-    else:
-        df_park_suggestion = df_baseline[df_baseline['Distance'] <= 3].sort_values(by='Park suggestion')
-        return pd.concat([df_park_suggestion, df_baseline.sort_values(by='Distance')[df_park_suggestion.shape[0]:]], axis=0)[['Location', 'Distance', 'Park suggestion']].iloc[:3]
+
+    return df_baseline.sort_values(by='Park suggestion')[['Location', 'Distance', 'Park suggestion', 'Time', 'Visits', 'Predictions']].iloc[:3]
+
+    # if(df_baseline['Distance'] <= 3).sum() >= 3:
+    #     df_baseline = df_baseline[df_baseline['Distance'] <= 3]
+    #     return df_baseline.sort_values(by='Park suggestion')[['Location', 'Distance', 'Park suggestion', 'Time', 'Visits', 'Predictions']].iloc[:3]
+    # else:
+    #     df_park_suggestion = df_baseline[df_baseline['Distance'] <= 3].sort_values(by='Park suggestion')
+    #     return pd.concat([df_park_suggestion, df_baseline.sort_values(by='Distance')[df_park_suggestion.shape[0]:]], axis=0)[['Location', 'Distance', 'Park suggestion', 'Time', 'Visits', 'Predictions']].iloc[:3]
 
 def get_baseline(df, date, time):
     df = clean_resono(df)
