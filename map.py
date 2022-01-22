@@ -13,8 +13,6 @@ import os
 import warnings
 import glob
 import catboost
-# import plotly
-# import plotly.tools as tls
 
 warnings.filterwarnings('ignore')
 
@@ -142,20 +140,14 @@ def create_plot(prev, data, file_name):
     plt.plot(prev['Visits'], 'o-', linewidth=8, color='#b52222', markersize=15, markerfacecolor='#661111')
     plt.plot(data['Predicted visitors'], 'o:', color='#b52222', linewidth=8, markersize=15, markerfacecolor='#661111')
     plt.axhline(y=baseline[baseline['Location'] == file_name]['Visits'].values[0], color='#b04343', linestyle='-', linewidth=4)
-    # plt.plot(data['Actual visitors'], label='Actual visitors')
 
     plt.setp(axes, xticks=np.linspace(0,12,4),
          xticklabels=[prev['Time'][0], prev['Time'][int(len(prev) / 2)], prev['Time'][-1], next_dt.strftime('%H:%M:%S')])
 
-    # plt.xlabel('Time')
-    # plt.ylabel('Visitors')
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
-    # plt.legend(loc='upper left', prop={'size': 25})
 
     plt.savefig('images/'+file_name, transparent=True)
-    # plotly_fig = tls.mpl_to_plotly(f)
-    # plotly.offline.plot(plotly_fig, filename='test.html', auto_open=False, config={'displayModeBar': False})
 
     plt.cla()
     plt.clf()
@@ -245,23 +237,22 @@ def get_baseline(data, resono):
     current_data = data.loc[str(idx)][['Location', 'Visits']]
 
     baseline = h.get_baseline(resono, prediction_date, time)
-    business = []
+    baseline['Business'] = ['test'] * len(baseline.index)
 
     for loc in locations:
-        if current_data[current_data['Location'] == loc]['Visits'].values[0] < 0.85 * baseline[baseline['Location'] == loc]['Visits'].values[0]:
-            business.append('Not busy')
-        elif current_data[current_data['Location'] == loc]['Visits'].values[0] > 1.15 * baseline[baseline['Location'] == loc]['Visits'].values[0]:
-            business.append('Busier than usual')
+        if current_data[current_data['Location'] == loc]['Visits'].values[0] < (0.85 * baseline[baseline['Location'] == loc]['Visits'].values[0]):
+            baseline.loc[baseline['Location'] == loc, 'Business'] = 'Not busy'
+        elif current_data[current_data['Location'] == loc]['Visits'].values[0] > (1.15 * baseline[baseline['Location'] == loc]['Visits'].values[0]):
+            baseline.loc[baseline['Location'] == loc, 'Business'] = 'Busier than usual'
         else:
-            business.append('As busy as usual')
+            baseline.loc[baseline['Location'] == loc, 'Business'] = 'As busy as usual'
 
-    baseline['Business'] = business
     return baseline
 
 data = pd.read_csv('Models Catboost/dec_19_2021.csv', index_col=1)
 locations = data.Location.unique()
 
-resono = pd.read_csv('Complete dataframe/resono_2020_2022.csv', index_col=0)
+resono = pd.read_csv('CSVs/resono_2020_2022.csv', index_col=0)
 
 d = get_geodict('GeoJSON files/*.geojson')
 geos = list(d.keys())
@@ -314,8 +305,7 @@ for park in geos:
         data_loc = data[data['Location'] == name]
         prev, next = get_data(data_loc)
 
-        model = cls.load_model('Models Catboost/model_' + name.lower().replace(" ", "_") + '.json', "json")  # load model
-        # cat_model.save_model('model_' + x.lower().replace(" ", "_") + '.json', format="json")
+        model = cls.load_model('Models Catboost/model_' + name.lower().replace(" ", "_") + '.json', "json")
         preds = get_predictions(model, next, name)
         park_suggs = create_park_suggestions(data, model, name)
         create_plot(prev, preds, name)
