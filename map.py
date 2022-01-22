@@ -261,7 +261,7 @@ def get_baseline(data, resono):
 data = pd.read_csv('Models Catboost/dec_19_2021.csv', index_col=1)
 locations = data.Location.unique()
 
-resono = pd.read_csv('CSVs/resono_2020_2022.csv', index_col=0)
+resono = pd.read_csv('Complete dataframe/resono_2020_2022.csv', index_col=0)
 
 d = get_geodict('GeoJSON files/*.geojson')
 geos = list(d.keys())
