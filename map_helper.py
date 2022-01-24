@@ -7,7 +7,6 @@ import os
 import datetime as dt
 import xgboost as xgb
 import catboost
-# import category_encoders as ce
 from sklearn.svm import OneClassSVM
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
@@ -17,6 +16,7 @@ from math import radians, cos, sin, asin, sqrt
 from dateutil.relativedelta import relativedelta
 from datetime import timedelta
 
+# Global variables for the park locations
 vondelpark_west = [{'lat': 52.356496, 'lng': 4.861447}]
 vondelpark_oost_3 = [{'lng': 4.869217, 'lat': 52.358252}]
 vondelpark_oost_2 = [{'lng': 4.874692, 'lat': 52.359798}]
@@ -40,31 +40,14 @@ noorderpark = [{'lng': 4.919606, 'lat': 52.392651}]
 sloterpark = [{'lng': 4.811894, 'lat': 52.366219}]
 wh_vliegenbos = [{'lng': 4.931495, 'lat': 52.388802}]
 
-def clean_resono(df, merge=True):
+def predict(model, data, location, catboost=True):
     '''
-    ~~Probably defunct once we merge the datasets~~
-    Rename the columns and set Datetime as index
+    Predict the amount of visits using Catboost or XGBoost
 
-    :df: Dataframe to clean
-    :merge: True if Noord/Zuid and Oost/West need to be merged (default = True)
-
-    Returns a cleaned Dataframe
-    '''
-    df['End'] = pd.to_datetime(df['End'])
-    df = df.rename(columns = {'End' : 'Datetime',
-                              'End_Dates' : 'Date',
-                              'End_Time' : 'Time'})
-    df = df.set_index('Datetime')
-    return df
-
-def predict_XGBoost(model, data, location, pred_params):
-    '''
-    Predict the amount of visits using XGBoost
-
-    :model: The GXBoost model used for predicting
-    :data: Dataframe with all the data
+    :model: The Catboost/GXBoost model used for predicting
+    :data: Dataframe with the data to make the predictions for
     :location: The location of the park to make predictions for
-    :pred_params: A list of the names of the predictor variables
+    :catboost: True when predicting with Catboost, false when using XGBoost
 
     Returns a Dataframe with the predictions
     '''
@@ -72,30 +55,6 @@ def predict_XGBoost(model, data, location, pred_params):
     data = data[data['Location'] == location]
 
     # Split the data into input and output variables
-    X = data[pred_params]
-    y = data['Visits']
-
-    # Convert test set to DMatrix objects
-    test_dmatrix = xgb.DMatrix(data = X, label = y)
-
-    # Fit the data and make predictions
-    pred = model.predict(test_dmatrix)
-    predictions = pd.DataFrame({'Predicted visitors': pred,
-                                'Actual visitors': y})
-    predictions = predictions.clip(lower=0)
-
-    # Calculate RMSE and MAE
-    rmse = np.sqrt(mean_squared_error(y, predictions['Predicted visitors']))
-    mae = mean_absolute_error(y, predictions['Predicted visitors'])
-
-    # print(location)
-    # print("RMSE : % f" %(rmse))
-    # print("MAE : % f" %(mae))
-    return predictions.sort_index()
-
-def predict_catboost(model, data, location):
-    data = data[data['Location']== location]
-
     X = data[['Location', 'Date', 'Time',
         'Journeys', 'Windspeed', 'Temperature', 'Clouds', 'Rain amount',
         'Rain duration', 'Sun duration', 'Fog', 'Rain', 'Snow', 'Thunder',
@@ -114,11 +73,16 @@ def predict_catboost(model, data, location):
         'Holiday_Name_Whit', 'Holiday_Name_Winter holiday']]
     y = data['Visits']
 
-    pred = model.predict(X)
+    if catboost == True:
+        pred = model.predict(X)
+    else:
+        test_dmatrix = xgb.DMatrix(data = X, label = y)
+        pred = model.predict(test_dmatrix)
 
+    # Put the predictions in a dataframe and sort them by time
     predictions = pd.DataFrame({'Predicted visitors': pred,
                                 'Actual visitors': y}).sort_index()
-    # print(predictions)
+
     return predictions
 
 def haversine(lon1, lat1, lon2, lat2):
@@ -141,10 +105,9 @@ def ceil_dt(dt, delta):
     return dt + (dt.min - dt) % delta
 
 def getParkSuggestion(df, date, lat, lng, pred, time):
-    df = clean_resono(df)
     resono = df.reset_index()
+    resono['Datetime'] = pd.to_datetime(resono['Datetime'])
     resono['Location'] = resono['Location'].str.replace('W.H. Vliegenbos', 'WH Vliegenbos')
-    # print(resono)
 
     prediction_date_4_months = date + relativedelta(months=-4, days=-1)
     df_4months = resono[(resono['Datetime'] >= prediction_date_4_months) & (resono['Datetime'] < date)]
@@ -162,16 +125,6 @@ def getParkSuggestion(df, date, lat, lng, pred, time):
     df_baseline['Distance'] = [haversine(lat, lng, df_baseline.iloc[x]['Latitude'], df_baseline.iloc[x]['Longitude'])
                          for x in range(df_baseline.shape[0])]
 
-    # df_baseline['Predictions'] = pred
-    # df_baseline['Crowdedness factor'] = (df_baseline['Predictions'] - df_baseline['Visits']) / df_baseline['Visits'] #(baseline - values) / values
-    # df_baseline['Park suggestion'] = df_baseline['Distance'] + (df_baseline['Crowdedness factor']*5)
-    # df_baseline['Distance'] = round(df_baseline['Distance'],2)
-    #
-    # df_baseline = df_baseline.reset_index(drop=True)
-    # df_baseline.index += 1
-    # df_baseline = df_baseline[df_baseline['Distance'] > 0]
-    # return df_baseline
-
     df_baseline['Predictions'] = pred
     df_baseline['Crowdedness factor'] = (df_baseline['Predictions'] - df_baseline['Visits']) / df_baseline['Visits'] #(baseline - values) / values
     crowdedness = df_baseline['Crowdedness factor'].values
@@ -183,21 +136,21 @@ def getParkSuggestion(df, date, lat, lng, pred, time):
     df_baseline.index += 1
     df_baseline = df_baseline[df_baseline['Distance'] > 0]
 
-
     return df_baseline.sort_values(by='Park suggestion')[['Location', 'Distance', 'Park suggestion', 'Time', 'Visits', 'Predictions']].iloc[:3]
 
-    # if(df_baseline['Distance'] <= 3).sum() >= 3:
-    #     df_baseline = df_baseline[df_baseline['Distance'] <= 3]
-    #     return df_baseline.sort_values(by='Park suggestion')[['Location', 'Distance', 'Park suggestion', 'Time', 'Visits', 'Predictions']].iloc[:3]
-    # else:
-    #     df_park_suggestion = df_baseline[df_baseline['Distance'] <= 3].sort_values(by='Park suggestion')
-    #     return pd.concat([df_park_suggestion, df_baseline.sort_values(by='Distance')[df_park_suggestion.shape[0]:]], axis=0)[['Location', 'Distance', 'Park suggestion', 'Time', 'Visits', 'Predictions']].iloc[:3]
-
 def get_baseline(df, date, time):
-    df = clean_resono(df)
+    '''
+    Get the baseline of the last four months for the amount of visitors for a certain date and time.
+
+    :df: A Dataframe with the Resono data
+    :date: The date for which the baseline is calculated
+    :time: The time for which the baseline is calculated
+
+    Returns a dataframe
+    '''
     resono = df.reset_index()
+    resono['Datetime'] = pd.to_datetime(resono['Datetime'])
     resono['Location'] = resono['Location'].str.replace('W.H. Vliegenbos', 'WH Vliegenbos')
-    # print(resono)
 
     prediction_date_4_months = date + relativedelta(months=-4, days=-1)
     df_4months = resono[(resono['Datetime'] >= prediction_date_4_months) & (resono['Datetime'] < date)]
